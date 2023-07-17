@@ -88,8 +88,9 @@ examples_video = [
 ['./videos/a_man_in_parkour_100.jpg', './videos/a_man_in_parkour_100.mp4'],
 ]
 
-'''
-def demo_function(prompt1,prompt2,prompt3,prompt4,prompt5,prompt6,prompt7,prompt8,prompt9,prompt10, img):
+
+def demo_function2(prompt1,prompt2,prompt3,prompt4,prompt5,prompt6,prompt7,prompt8,prompt9,prompt10,
+                 img):
     prompt_image_list = []
     prompt_tgt_list = []
     if prompt1:
@@ -124,7 +125,7 @@ def demo_function(prompt1,prompt2,prompt3,prompt4,prompt5,prompt6,prompt7,prompt
         prompt_tgt_list.append(resizeImg(prompt10["mask"]))   
     
     return img
-'''
+
 def demo_function(prompts, img):
     prompt_image_list = []
     prompt_tgt_list = []
@@ -151,20 +152,6 @@ demo_1 = gr.Interface(fn = demo_function,
                    allow_flagging="never",
                    )
 
-'''
-
-samSegGPT = gr.Interface(fn=inference_mask1_sam,
-                   inputs=[gr.ImageMask(brush_radius=4, label="prompt (提示图)"), gr.Image(label="img1 (测试图1)"), gr.Image(label="img2 (测试图2)")],
-                    outputs=[gr.Image(label="SAM output (mask)").style(height=256, width=256),gr.Image(label="output1 (输出图1)").style(height=256, width=256), gr.Image(label="output2 (输出图2)").style(height=256, width=256)],
-                    # outputs=[gr.Image(label="output3 (输出图1)").style(height=256, width=256), gr.Image(label="output4 (输出图2)").style(height=256, width=256)],
-                    examples=examples_sam,
-                    #title="SegGPT for Any Segmentation<br>(Painter Inside)",
-                    description="<p> \
-                    <strong>SAM+SegGPT: One touch for segmentation in all images or videos.</strong> <br>\</p>",
-                   cache_examples=False,
-                   allow_flagging="never",
-                   )
-'''
 def save_prompt_handler(prompts):
     global saved_prompts
     saved_prompts.append(version)
@@ -194,7 +181,7 @@ with gr.Blocks() as demo:
         with gr.Row():
             with gr.Column():
                 slider = gr.Slider(1,max_imagebox, step = 1, value = 10, label = "Amount of Prompts: ")
-                prompt_button = gr.Button(value = "Submit Amount of Prompt")  
+                prompt_button = gr.Button(value = "Submit Amount of Prompt").style()  
         with gr.Row():
             gr.Markdown(
                 """
@@ -211,17 +198,22 @@ with gr.Blocks() as demo:
                         imagebox.append(masked_image)
                         
             with gr.Column():
-                predict_img = gr.Image(shape=(240, 240),label = "Image")
-                predict_button = gr.Button('Predict')
-                prediction_result = gr.Image(label = "Prediction Result", height = 256)
+                with gr.Row():
+                    predict_img = gr.Image(shape=(240, 240),label = "Image", height = 350)
+                with gr.Row():
+                    predict_button = gr.Button('Predict')
+                    clear_prompt_button = gr.ClearButton(imagebox, value = 'Clear All Prompt')
+                    clear_image_button = gr.ClearButton(predict_img, value = 'Clear Predict Image')
+                with gr.Row():
+                    prediction_result = gr.Image(label = "Prediction Result", height = 350)
 
             prompt_button.click(variable_outputs, slider, imagebox)
             print("HI")
             print(imagebox)
-            
             #predict_button.click(demo_function, inputs= [imagebox, predict_img], outputs=prediction_result)
+            predict_button.click(demo_function2, inputs= [imagebox[0], imagebox[1],imagebox[2],imagebox[3],imagebox[4],imagebox[5],imagebox[6],imagebox[7],imagebox[8],imagebox[9], predict_img], outputs=[prediction_result])
                
-    with gr.Tab("Save"):
+    with gr.Tab("Saved Prompt"):
         with gr.Row():
             with gr.Column():
                 gr.Markdown(
