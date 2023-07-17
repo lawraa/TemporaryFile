@@ -64,21 +64,28 @@ def resizeImgIo(img):
 # define app features and run
 
 examples = [
+            ['./images/hmbb_1.jpg', './images/hmbb_2.jpg'],
+            ['./images/rainbow_1.jpg', './images/rainbow_2.jpg'],
+            ['./images/earth_1.jpg', './images/earth_2.jpg'],
+            ['./images/obj_1.jpg', './images/obj_2.jpg'],
+            ['./images/ydt_2.jpg', './images/ydt_1.jpg'],
+           ]
+examples_pred = [
+            ['./images/hmbb_3.jpg'],
+            ['./images/rainbow_3.jpg'],
+            ['./images/earth_3.jpg'],
+            ['./images/obj_3.jpg'],
+            ['./images/ydt_3.jpg'],
+           ]
+'''
+examples = [
             ['./images/hmbb_1.jpg', './images/hmbb_2.jpg', './images/hmbb_3.jpg'],
             ['./images/rainbow_1.jpg', './images/rainbow_2.jpg', './images/rainbow_3.jpg'],
             ['./images/earth_1.jpg', './images/earth_2.jpg', './images/earth_3.jpg'],
             ['./images/obj_1.jpg', './images/obj_2.jpg', './images/obj_3.jpg'],
             ['./images/ydt_2.jpg', './images/ydt_1.jpg', './images/ydt_3.jpg'],
            ]
-
-examples_sam = [
-            ['./images/hmbb_1.jpg', './images/hmbb_2.jpg', './images/hmbb_3.jpg'],
-            ['./images/street_1.jpg', './images/street_2.jpg', './images/street_3.jpg'],
-            ['./images/tom_1.jpg', './images/tom_2.jpg', './images/tom_3.jpg'],
-            ['./images/earth_1.jpg', './images/earth_2.jpg', './images/earth_3.jpg'],
-            ['./images/ydt_2.jpg', './images/ydt_1.jpg', './images/ydt_3.jpg'],
-           ]
-
+'''
 examples_video = [
             ['./videos/horse-running.jpg', './videos/horse-running.mp4'],
             ['./videos/a_man_is_surfing_3_30.jpg', './videos/a_man_is_surfing_3_30.mp4'],
@@ -124,7 +131,11 @@ def demo_function2(prompt1,prompt2,prompt3,prompt4,prompt5,prompt6,prompt7,promp
         prompt_image_list.append(resizeImg(prompt10["image"]))
         prompt_tgt_list.append(resizeImg(prompt10["mask"]))   
     
-    return img
+    x= 0.488
+
+    return img,x
+
+
 
 def demo_function(prompts, img):
     prompt_image_list = []
@@ -140,18 +151,6 @@ def demo_function(prompts, img):
 
 
 
-demo_1 = gr.Interface(fn = demo_function,
-                    inputs=[gr.ImageMask(brush_radius=8, label="prompt1"), gr.ImageMask(brush_radius=8,label="prompt2"), gr.ImageMask(brush_radius=8, label="prompt3"), gr.ImageMask(brush_radius=8,label="prompt4"), gr.ImageMask(brush_radius=8, label="prompt5"), gr.ImageMask(brush_radius=8,label="prompt6"), gr.ImageMask(brush_radius=8, label="prompt7"), gr.ImageMask(brush_radius=8,label="prompt8"), gr.ImageMask(brush_radius=8, label="prompt9"), gr.ImageMask(brush_radius=8,label="prompt10"),gr.Image(label="img")],
-                    outputs=[gr.Image(label="output1").style(height=256, width=256)],
-                    # outputs=[gr.Image(label="output3 (输出图1)").style(height=256, width=256), gr.Image(label="output4 (输出图2)").style(height=256, width=256)],
-                    examples=examples_sam,
-                    #title="SegGPT for Any Segmentation<br>(Painter Inside)",
-                    description="<p> \
-                    <strong>SAM+SegGPT: One touch for segmentation in all images or videos.</strong> <br>\</p>",
-                   cache_examples=False,
-                   allow_flagging="never",
-                   )
-
 def save_prompt_handler(prompts):
     global saved_prompts
     saved_prompts.append(version)
@@ -165,7 +164,7 @@ def load_prompt_handler(version):
 
 def variable_outputs(x):
     x = int(x)
-    return [gr.ImageMask.update(visible=True)]*x+ [gr.ImageMask.update(visible=False)]*(max_imagebox-x)
+    return [gr.ImageMask.update(visible=True)]*x+ [gr.ImageMask.update(value= None, visible=False)]*(max_imagebox-x)
 
 
 with gr.Blocks() as demo:
@@ -194,25 +193,58 @@ with gr.Blocks() as demo:
             with gr.Column():
                 imagebox = []
                 for i in range(max_imagebox):
-                        masked_image = gr.ImageMask(brush_radius=8, label = "Prompt")
+                    with gr.Row():
+                        masked_image = gr.ImageMask(brush_radius=8, label = "Prompt").style(height = 350)
                         imagebox.append(masked_image)
                         
             with gr.Column():
                 with gr.Row():
                     predict_img = gr.Image(shape=(240, 240),label = "Image", height = 350)
                 with gr.Row():
-                    predict_button = gr.Button('Predict')
+                    
                     clear_prompt_button = gr.ClearButton(imagebox, value = 'Clear All Prompt')
                     clear_image_button = gr.ClearButton(predict_img, value = 'Clear Predict Image')
                 with gr.Row():
-                    prediction_result = gr.Image(label = "Prediction Result", height = 350)
+                    predict_button = gr.Button('Predict')
+                with gr.Row():
+                    save_button = gr.Button('Save Prompts')
+                    load_button = gr.Button('Load Prompts')
+                with gr.Row():
+                    with gr.Column():
+                        prediction_result = gr.Image(label = "Prediction Result", height = 350)
+                        performance = gr.Textbox(label = "Performance(Dice Coefficient)")
 
+
+
+
+#SLIDE THEN CLICK TO CHANGE
             prompt_button.click(variable_outputs, slider, imagebox)
+
+#SLIDE AND CHANGE IMMEDIATELY
+            #slider.change(variable_outputs, slider, imagebox)
+
+
             print("HI")
             print(imagebox)
             #predict_button.click(demo_function, inputs= [imagebox, predict_img], outputs=prediction_result)
-            predict_button.click(demo_function2, inputs= [imagebox[0], imagebox[1],imagebox[2],imagebox[3],imagebox[4],imagebox[5],imagebox[6],imagebox[7],imagebox[8],imagebox[9], predict_img], outputs=[prediction_result])
-               
+            predict_button.click(demo_function2, inputs= [imagebox[0], imagebox[1],imagebox[2],imagebox[3],imagebox[4],imagebox[5],imagebox[6],imagebox[7],imagebox[8],imagebox[9], predict_img], outputs=[prediction_result, performance])
+            #load_button.click()
+
+
+        with gr.Row():
+            with gr.Column():
+                gr.Markdown("## Test Examples")
+                gr.Examples(
+                    examples = examples,
+                    inputs = imagebox,
+                    cache_examples = False,
+                )
+                gr.Markdown("## Prediction Examples")
+                gr.Examples(
+                    examples = examples_pred,
+                    inputs = predict_img,
+                    cache_examples = False,
+                )
     with gr.Tab("Saved Prompt"):
         with gr.Row():
             with gr.Column():
@@ -224,99 +256,3 @@ with gr.Blocks() as demo:
                         )    
 
 demo.launch()
-'''
-with gr.Blocks() as demo:
-    slider = gr.Slider(1,max_imagebox, value = max_imagebox, step = 1, label = "Amount of Prompts: ")
-    imagebox = []
-    for i in range(max_imagebox):
-        t = gr.ImageMask(brush_radius=8)
-        imagebox.append(t)
-    demo_interface = gr.Interface(fn=demo_function,
-                  inputs=[gr.ImageMask.update(visible=True)]*x+ [gr.ImageMask.update(visible=False)]*(max_imagebox-x)+["image"],
-                  outputs=[gr.Image(label="output1").style(height=256, width=256)],
-                  layout="vertical",
-                  title=title)
-
-    slider.change(fn = variable_outputs, inputs = slider, outputs = demo_interface)
-
-    #io1 = gr.TabbedInterface([demo_1],['demo1'],title = title)
-  
-
-'''
-'''
-demo_interface = gr.Interface(fn=demo_function,
-                  inputs=[gr.ImageMask(brush_radius=8, label=f"prompt{i+1}") for i in range(max_imagebox)]+["image"],
-                  outputs=[gr.Image(label="output1").style(height=256, width=256)],
-                  layout="vertical",
-                  title=title)
-
-def update_inputs(slider_value):
-    inputs = variable_inputs(slider_value)
-    demo_interface.inputs = inputs
-
-slider.update(update_inputs, "value")
-
-demo_interface.launch()
-
-
-
-with gr.Interface(fn=demo_function,
-                  inputs=[gr.ImageMask(brush_radius=8, label=f"prompt{i+1}") for i in range(max_imagebox)]+["image"],
-                  outputs=[gr.Image(label="output1").style(height=256, width=256)],
-                  layout="vertical",
-                  title=title) as demo_interface:
-    
-    image_boxes = []
-    for _ in range(max_imagebox):
-        image_box = gr.ImageMask(brush_radius = 8)
-        image_boxes.append(image_box)
-    slider.change(variable_outputs, slider, image_boxes)
-    demo_interface.launch()
-'''
-
-
-
-'''
-with gr.Blocks() as demo:
-    slider = gr.Slider(1,max_imagebox, value = max_imagebox, step = 1, label = "Amount of Prompts: ")
-    imagebox = []
-    for i in range(max_imagebox):
-        t = gr.ImageMask(brush_radius=8)
-        imagebox.append(t)
-    slider.change(variable_outputs, slider, imagebox)
-
-    io1 = gr.TabbedInterface([demo_1],['demo1'],title = title)
-    
-demo.launch(enable_queue=True)
-'''
-
-
-'''
-with gr.Blocks() as demo:
-    slider = gr.Slider(1,max_imagebox, value = max_imagebox, step = 1, label = "Amount of Prompts: ")
-    imagebox = []
-    for i in range(max_imagebox):
-        t = gr.ImageMask(brush_radius=8)
-        imagebox.append(t)
-    slider.change(variable_outputs, slider, imagebox)
-
-    #interface, label, title 
-    
-    save_button = gr.Button(value = "Save Prompt")
-    save_button.click(save_prompt_handler)
-    load_button = gr.Button(value = "Load Prompt")
-    load_button.click(load_prompt_handler)
-    io1 = gr.TabbedInterface(
-        [samSegGPT], 
-        ['SAM+SegGPT (一触百通)'], 
-        title=title,
-    )
-'''
-
-#demo.launch(share=True, auth=("baai", "vision"))
-
-#demo.launch(enable_queue=False, server_name="0.0.0.0", server_port=34311)
-
-#in inference_mask1_pil(can send empty prompt), add to 10 prompts
-#input also set to 10 prompts, and then according to slider(change visibility)
-#input can add int 
