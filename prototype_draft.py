@@ -9,6 +9,26 @@ import numpy as np
 import gradio as gr
 import os
 import pandas as pd
+import h5py
+
+import h5py
+import numpy as np
+import requests
+
+from datetime import datetime
+'''
+# datetime object containing current date and time
+now = datetime.now()
+ 
+print("now =", now)
+
+# dd/mm/YY H:M:S
+dt_string = now.strftime("%d/%m/%Y %H:%M:%S")
+print("date and time =", dt_string)
+
+#now = 2023-07-18 14:16:55.857082
+#date and time = 18/07/2023 14:16:55
+'''
 
 
 sys.path.append('.')
@@ -130,10 +150,8 @@ def demo_function2(prompt1,prompt2,prompt3,prompt4,prompt5,prompt6,prompt7,promp
     if prompt10:
         prompt_image_list.append(resizeImg(prompt10["image"]))
         prompt_tgt_list.append(resizeImg(prompt10["mask"]))   
-    
-    x= 0.488
 
-    return img,x
+    return img
 
 
 
@@ -149,18 +167,103 @@ def demo_function(prompts, img):
     # Process the prompts and final image here and return the output image
     return img
 
+def evaluate_function(img):
+    #after evaluation
+    x=0.488
+    return x
 
 
-def save_prompt_handler(prompts):
-    global saved_prompts
-    saved_prompts.append(version)
+def package_images(prompt1, prompt2, prompt3, prompt4, prompt5,prompt6,prompt7,prompt8,prompt9,prompt10, output_file,
+                    predict_img,prediction_result, answer_mask, performance):
+    # Create a new HDF5 file
+    with h5py.File(output_file, 'w') as hf:
+        # Create groups and store the image data
+        prompts = hf.create_group("prompts")
+        test_set = hf.create_group("test_set")
+        img = prompts.create_group("img")
+        mask = prompts.create_group("mask")
+        pred = test_set.create_group("pred")
+        pred_ans = test_set.create_group("pred_ans")
+        pred_img = pred.create_group("pred_img")
+        pred_result_img = pred.create_group("pred_result_img")
+        #pred_result_mask = pred.create_group("pred_result_mask")
+        print("start")
+        if prompt1:
+            img.create_dataset('image_1', data=prompt1['image'])
+            mask.create_dataset('mask_1', data=prompt1['mask'])
+            print("file1")
+        if prompt2:    
+            img.create_dataset('image_2', data=prompt2['image'])
+            mask.create_dataset('mask_2', data=prompt2['mask'])
+            print("file2")
+        if prompt3:
+            img.create_dataset('image_3', data=prompt3['image'])
+            mask.create_dataset('mask_3', data=prompt3['mask'])
+            print("file3")
+        if prompt4:
+            img.create_dataset('image_4', data=prompt4['image'])
+            mask.create_dataset('mask_4', data=prompt4['mask'])
+            print("file4")
+        if prompt5:
+            img.create_dataset('image_5', data=prompt5['image'])
+            mask.create_dataset('mask_5', data=prompt5['mask'])
+            print("file5")
+        if prompt6:
+            img.create_dataset('image_6', data=prompt6['image'])
+            mask.create_dataset('mask_6', data=prompt6['mask'])
+            print("file6")
+        if prompt7:
+            img.create_dataset('image_7', data=prompt7['image'])
+            mask.create_dataset('mask_7', data=prompt7['mask'])
+            print("file7")
+        if prompt8:
+            img.create_dataset('image_8', data=prompt8['image'])
+            mask.create_dataset('mask_8', data=prompt8['mask'])
+            print("file8")
+        if prompt9:
+            img.create_dataset('image_9', data=prompt9['image'])
+            mask.create_dataset('mask_9', data=prompt9['mask'])
+            print("file9")
+        if prompt10:
+            img.create_dataset('image_10', data=prompt10['image'])
+            mask.create_dataset('mask_10', data=prompt10['mask'])
+            print("file10")
 
-def load_prompt_handler(version):
-    global saved_prompts
-    if version < len(saved_prompts):
-        return saved_prompts[version]
-    else:
-        return None
+        
+
+        if predict_img.any():
+            print("hi")
+            pred_img.create_dataset('pred_img_1', data = predict_img)
+            if performance:
+                print("hi")
+                pred_img.attrs['performance'] = performance
+        if prediction_result.any():
+            print("hi")
+            #pred_result_img.create_dataset('prediction_result_img', data= prediction_result['image'])
+            #pred_result_mask.create_dataset('prediction_result_mask', data= prediction_result['mask'])
+            pred_result_img.create_dataset('prediction_result_img', data= prediction_result)
+        if answer_mask.any():
+            print("hi")
+            pred_ans.create_dataset('pred_ans', data = answer_mask)
+
+def download_h5_file(prompt1, prompt2, prompt3, prompt4, prompt5,prompt6,prompt7,prompt8,prompt9,prompt10,predict_img,
+                        prediction_result, answer_mask, performance):
+    # Package the images into an HDF5 file
+    output_file = 'images.h5'
+    package_images(prompt1, prompt2, prompt3, prompt4, prompt5,prompt6,prompt7,prompt8,prompt9,prompt10, output_file, predict_img, prediction_result, answer_mask, performance)
+    return output_file
+'''
+# Specify the output file path and name
+output_file = 'prompts.h5'
+
+# Package the images into an HDF5 file and get the download link
+download_link = package_images(image1, image2, image3, image4, image5, output_file)
+
+# Print the download link
+print(f'Download link: {download_link}')
+'''
+
+
 
 def variable_outputs(x):
     x = int(x)
@@ -181,6 +284,7 @@ with gr.Blocks() as demo:
             with gr.Column():
                 slider = gr.Slider(1,max_imagebox, step = 1, value = 10, label = "Amount of Prompts: ")
                 prompt_button = gr.Button(value = "Submit Amount of Prompt").style()  
+            
         with gr.Row():
             gr.Markdown(
                 """
@@ -207,15 +311,23 @@ with gr.Blocks() as demo:
                 with gr.Row():
                     predict_button = gr.Button('Predict')
                 with gr.Row():
-                    save_button = gr.Button('Save Prompts')
-                    load_button = gr.Button('Load Prompts')
-                with gr.Row():
                     with gr.Column():
                         prediction_result = gr.Image(label = "Prediction Result", height = 350)
+                        answer_mask = gr.Image(label = "Labeled Answer", height = 350)
+                        evaluate_button = gr.Button('Evaluate Performance')
                         performance = gr.Textbox(label = "Performance(Dice Coefficient)")
+                with gr.Row():
+                    save_button = gr.Button('Save Prompts')
+                    load_button = gr.Button('Load Prompts')
 
+                with gr.Row():
+                    output = gr.File(Label = "Download HDF5")
+                    
+                
 
+            evaluate_button.click(evaluate_function, answer_mask, performance)
 
+            
 
 #SLIDE THEN CLICK TO CHANGE
             prompt_button.click(variable_outputs, slider, imagebox)
@@ -223,13 +335,14 @@ with gr.Blocks() as demo:
 #SLIDE AND CHANGE IMMEDIATELY
             #slider.change(variable_outputs, slider, imagebox)
 
-
+            
             print("HI")
             print(imagebox)
             #predict_button.click(demo_function, inputs= [imagebox, predict_img], outputs=prediction_result)
-            predict_button.click(demo_function2, inputs= [imagebox[0], imagebox[1],imagebox[2],imagebox[3],imagebox[4],imagebox[5],imagebox[6],imagebox[7],imagebox[8],imagebox[9], predict_img], outputs=[prediction_result, performance])
+            predict_button.click(demo_function2, inputs= [imagebox[0], imagebox[1],imagebox[2],imagebox[3],imagebox[4],imagebox[5],imagebox[6],imagebox[7],imagebox[8],imagebox[9], predict_img], outputs=[prediction_result])
             #load_button.click()
-
+            save_button.click(download_h5_file, inputs= [imagebox[0], imagebox[1],imagebox[2],imagebox[3],imagebox[4],imagebox[5],imagebox[6],imagebox[7],imagebox[8],imagebox[9],
+                                             predict_img,prediction_result, answer_mask, performance], outputs = output)
 
         with gr.Row():
             with gr.Column():
