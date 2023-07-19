@@ -10,12 +10,12 @@ import gradio as gr
 import os
 import pandas as pd
 import h5py
-
-import h5py
-import numpy as np
-import requests
-
 from datetime import datetime
+
+
+
+#Date and Time
+
 '''
 # datetime object containing current date and time
 now = datetime.now()
@@ -33,6 +33,7 @@ print("date and time =", dt_string)
 
 sys.path.append('.')
 
+#Determine Maximum Amount of Prompts
 max_imagebox = 10
 
 saved_prompts = []
@@ -47,6 +48,9 @@ title = "SegGPT: Segmenting Everything In Context<br> \
 </div> \
 "
 
+
+#Old Prediction Function(Not Used)
+'''
 def inference_mask1_sam(prompt,img, img_):
     files = {
         "useSam" : 1,
@@ -63,7 +67,10 @@ def inference_mask1_sam(prompt,img, img_):
         res.append(np.uint8(np.array(Image.open(io.BytesIO(base64.b64decode(a[i]))))))
 
     return res[1:] # remove the prompt image
+'''
 
+#Resize Image Function 
+#    - Used for prompt sending into model
 def resizeImg(img):
     res, hres = 448, 448
     img = Image.fromarray(img).convert("RGB")
@@ -81,8 +88,7 @@ def resizeImgIo(img):
     return io.BytesIO(temp.getvalue())
 
 
-# define app features and run
-
+# Examples of Prompts and Prediction Function
 examples = [
             ['./images/hmbb_1.jpg', './images/hmbb_2.jpg'],
             ['./images/rainbow_1.jpg', './images/rainbow_2.jpg'],
@@ -115,7 +121,7 @@ examples_video = [
 ['./videos/a_man_in_parkour_100.jpg', './videos/a_man_in_parkour_100.mp4'],
 ]
 
-
+# Dummy model function
 def demo_function2(prompt1,prompt2,prompt3,prompt4,prompt5,prompt6,prompt7,prompt8,prompt9,prompt10,
                  img):
     prompt_image_list = []
@@ -153,8 +159,7 @@ def demo_function2(prompt1,prompt2,prompt3,prompt4,prompt5,prompt6,prompt7,promp
 
     return img
 
-
-
+#Better way of sending in prompts(Error - list error)
 def demo_function(prompts, img):
     prompt_image_list = []
     prompt_tgt_list = []
@@ -167,12 +172,13 @@ def demo_function(prompts, img):
     # Process the prompts and final image here and return the output image
     return img
 
+#Function that evaluates the performance
 def evaluate_function(img):
     #after evaluation
     x=0.488
     return x
 
-
+#Package everything into a HDF file
 def package_images(prompt1, prompt2, prompt3, prompt4, prompt5,prompt6,prompt7,prompt8,prompt9,prompt10, output_file,
                     predict_img,prediction_result, answer_mask, performance):
     # Create a new HDF5 file
@@ -246,82 +252,99 @@ def package_images(prompt1, prompt2, prompt3, prompt4, prompt5,prompt6,prompt7,p
             print("hi")
             pred_ans.create_dataset('pred_ans', data = answer_mask)
 
+
+#Helper Function for packaging and downloading
 def download_h5_file(prompt1, prompt2, prompt3, prompt4, prompt5,prompt6,prompt7,prompt8,prompt9,prompt10,predict_img,
-                        prediction_result, answer_mask, performance):
+                        prediction_result, answer_mask, performance, prompt_name):
     # Package the images into an HDF5 file
-    output_file = 'images.h5'
+    output_file = prompt_name + '.h5'
     package_images(prompt1, prompt2, prompt3, prompt4, prompt5,prompt6,prompt7,prompt8,prompt9,prompt10, output_file, predict_img, prediction_result, answer_mask, performance)
     return output_file
-'''
-# Specify the output file path and name
-output_file = 'prompts.h5'
 
-# Package the images into an HDF5 file and get the download link
-download_link = package_images(image1, image2, image3, image4, image5, output_file)
-
-# Print the download link
-print(f'Download link: {download_link}')
-'''
-
-
-
+#Help with slider prompt
 def variable_outputs(x):
     x = int(x)
     return [gr.ImageMask.update(visible=True)]*x+ [gr.ImageMask.update(value= None, visible=False)]*(max_imagebox-x)
 
+demo_title = "<div align='center'> <h1>Demo</h1>\
+<h2>This is our demo blah blah blah</h2> \
+<h2>jfsdgnkjsdnfksdfnvksdkjnvlnewjgernjknver</h2> \
+</div> \
+"
+
 
 with gr.Blocks() as demo:
     gr.Markdown(
-        #title
-        """
-        # Demo
-        Scroll for amount of input prompt
-        Predict Image at the right
-        """
+        demo_title
     )
     with gr.Tab("Prompting and Predicting"):
         with gr.Row():
             with gr.Column():
+                gr.Markdown(
+                    """ # Upload and Predict """
+                )
+                gr.Markdown(
+                    '''
+                    ## Slide to Adjust the Amount of Prompts you want to Upload
+                    ## Upload your Prompts
+                    '''
+                )
+        with gr.Row():
+            with gr.Column():
                 slider = gr.Slider(1,max_imagebox, step = 1, value = 10, label = "Amount of Prompts: ")
-                prompt_button = gr.Button(value = "Submit Amount of Prompt").style()  
+                prompt_button = gr.Button(value = "Submit Amount of Prompt")                
+        with gr.Row():    
+            imagebox = []
+            for i in range(max_imagebox):
+                masked_image = gr.ImageMask(brush_radius=8, label = "Prompt", min_width = 350)
+                imagebox.append(masked_image)     
+        with gr.Row():
+            gr.Markdown(
+                '''
+                <br>
+                <br>
+                <br>
+                <h1> Upload the Image to Predict </h1>
+                '''
+            )        
+        with gr.Row():
+            with gr.Column():
+                with gr.Row():
+                    predict_img = gr.Image(shape=(240, 240),label = "Image")
+                with gr.Row():
+                    predict_button = gr.Button('Predict')
+                    #clear_prompt_button = gr.ClearButton(imagebox, value = 'Clear All Prompt')
+                    #clear_image_button = gr.ClearButton(predict_img, value = 'Clear Predict Image')
+            with gr.Column():
+                with gr.Row():
+                    prediction_result = gr.Image(label = "Prediction Result")
+            with gr.Column():
+                with gr.Row():
+                    with gr.Column():
+                        answer_mask = gr.Image(label = "Labeled Answer")
+                        evaluate_button = gr.Button('Evaluate Performance')
+                        performance = gr.Textbox(label = "Performance(Dice Coefficient)")
+            
             
         with gr.Row():
             gr.Markdown(
-                """
-                # Upload and Predict
-                Upload your Prompt on the Left
-                Predict Image on the right
-                """
-            )
+                '''
+                <br>
+                <br>
+                <br>
+                <h1> Load or Save Prompts </h1>
+                '''
+            )     
+        with gr.Row():
+            prompt_name = gr.Textbox(label = "Prompt_name")
+            save_button = gr.Button('Save Prompts')
+            
+
         with gr.Row():
             with gr.Column():
-                imagebox = []
-                for i in range(max_imagebox):
-                    with gr.Row():
-                        masked_image = gr.ImageMask(brush_radius=8, label = "Prompt").style(height = 350)
-                        imagebox.append(masked_image)
-                        
-            with gr.Column():
-                with gr.Row():
-                    predict_img = gr.Image(shape=(240, 240),label = "Image", height = 350)
-                with gr.Row():
-                    
-                    clear_prompt_button = gr.ClearButton(imagebox, value = 'Clear All Prompt')
-                    clear_image_button = gr.ClearButton(predict_img, value = 'Clear Predict Image')
-                with gr.Row():
-                    predict_button = gr.Button('Predict')
-                with gr.Row():
-                    with gr.Column():
-                        prediction_result = gr.Image(label = "Prediction Result", height = 350)
-                        answer_mask = gr.Image(label = "Labeled Answer", height = 350)
-                        evaluate_button = gr.Button('Evaluate Performance')
-                        performance = gr.Textbox(label = "Performance(Dice Coefficient)")
-                with gr.Row():
-                    save_button = gr.Button('Save Prompts')
-                    load_button = gr.Button('Load Prompts')
+                output = gr.File(Label = "Download HDF5")
 
-                with gr.Row():
-                    output = gr.File(Label = "Download HDF5")
+
                     
                 
 
@@ -341,8 +364,9 @@ with gr.Blocks() as demo:
             #predict_button.click(demo_function, inputs= [imagebox, predict_img], outputs=prediction_result)
             predict_button.click(demo_function2, inputs= [imagebox[0], imagebox[1],imagebox[2],imagebox[3],imagebox[4],imagebox[5],imagebox[6],imagebox[7],imagebox[8],imagebox[9], predict_img], outputs=[prediction_result])
             #load_button.click()
+
             save_button.click(download_h5_file, inputs= [imagebox[0], imagebox[1],imagebox[2],imagebox[3],imagebox[4],imagebox[5],imagebox[6],imagebox[7],imagebox[8],imagebox[9],
-                                             predict_img,prediction_result, answer_mask, performance], outputs = output)
+                                             predict_img,prediction_result, answer_mask, performance,prompt_name], outputs = output)
 
         with gr.Row():
             with gr.Column():
