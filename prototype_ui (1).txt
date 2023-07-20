@@ -11,8 +11,8 @@ import pandas as pd
 import h5py
 from datetime import datetime
 import re
-from SegGPT_inference.seggpt_inference import prepare_model
-from SegGPT_inference.seggpt_engine import inference_image_pil
+#from SegGPT_inference.seggpt_inference import prepare_model
+#from SegGPT_inference.seggpt_engine import inference_image_pil
 
 #Date and Time
 
@@ -139,7 +139,7 @@ def demo_function2(prompt1,prompt2,prompt3,prompt4,prompt5,prompt6,prompt7,promp
     #Un-Comment when use GPU and load model   
     #output = inference_image_pil(model, device, resizeImg(img), prompt_image_list, prompt_tgt_list)
     
-    return prompt1["mask"]
+    return img
 
 #Better way of sending in prompts(Error - list error)
 def demo_function(prompts, img):
@@ -165,7 +165,7 @@ def evaluate_function(img):
 #Help with slider prompt
 def variable_outputs(x):
     x = int(x)
-    return [gr.ImageMask.update(visible=True)]*x+ [gr.ImageMask.update(value= None, visible=False)]*(max_imagebox-x)
+    return [gr.ImageMask.update(visible=True,scale=1)]*x+ [gr.ImageMask.update(value= None, visible=False)]*(max_imagebox-x)
 
 #get user name and project
 
@@ -289,11 +289,43 @@ def download_h5_file(prompt1, prompt2, prompt3, prompt4, prompt5,prompt6,prompt7
     return output_file
 
 
-demo_title = "<div align='center'> <h1 style='font-size:60px;'> Demo </h1>\
-<h2>This is our demo blah blah blah</h2> \
-<h2>jfsdgnkjsdnfksdfnvksdkjnvlnewjgernjknver</h2> \
-</div> \
+demo_title = "<div style = 'text-align: center;margin: 50px auto;padding: 20px;max-width: 1000px;background-color: #ffffff;box-shadow: 0px 0px 20px rgba(0, 0, 0, 0.1);border-radius: 10px;color: #333333;'> \
+<h1 style = 'font-size: 60px;font-weight: bold;color: #003366;text-shadow: 2px 2px 4px #cccccc;'>Inference-Based Defect Detection</h1>\
+<div style = 'font-size: 24px;color: #333333;line-height: 1.6;max-width: 800px;margin: 0 auto;'> By implementing a defect detection AI model on the production line, we aim to streamline operations and improve quality control. Our goals include reducing missing and false reports, cutting down on human resources, and simplifying the overall working process.</div> \
+<div style='font-size: 18px;color: #666666;line-height: 1.6;max-width: 800px;margin: 30px auto;'>UI allows users to upload images, labeled or unlabeled, perform defect detection, and report performance given the ground truth.</div> \
+</div>\
+" 
+upload_prompt_title = "<div style = 'text-align: center;margin: 35px auto;padding: 20px;max-width: 800px;background-color: #ffffff;box-shadow: 0px 2px 6px rgba(0, 0, 0, 0.1);border-radius: 10px;color: #333333;'> \
+<h1 style = 'font-size: 35px;font-weight: bold;margin-bottom: 16px;color: #003366;'>Upload Prompt</h1>\
+<div style = 'text-align: left;font-size: 20px;line-height: 1.6;margin-bottom: 16px;'> 1. Slide to choose the amount of prompt you want to upload </div> \
+<div style='text-align: left;font-size: 20px;line-height: 1.6;margin-bottom: 20px;'>2. Label your prompts</div> \
+</div>\
 "
+
+upload_predict_image_title = "<div style = 'text-align: center;margin: 35px auto;padding: 20px;max-width: 800px;background-color: #ffffff;box-shadow: 0px 2px 6px rgba(0, 0, 0, 0.1);border-radius: 10px;color: #333333;'> \
+<h1 style = 'font-size: 35px;font-weight: bold;margin-bottom: 16px;color: #003366;'>Image Prediction and Evaluation</h1>\
+<div style = 'text-align: left;font-size: 20px;line-height: 1.6;margin-bottom: 16px;'> 1. Upload your image for prediction </div> \
+<div style='text-align: left;font-size: 20px;line-height: 1.6;margin-bottom: 20px;'>2. Upload the labeled mask and Evaluate Performance</div> \
+</div>\
+"
+
+
+save_prompt_title = "<div style = 'text-align: center;margin: 35px auto;padding: 20px;max-width: 800px;background-color: #ffffff;box-shadow: 0px 2px 6px rgba(0, 0, 0, 0.1);border-radius: 10px;color: #333333;'> \
+<h1 style = 'font-size: 35px;font-weight: bold;margin-bottom: 16px;color: #003366;'>Save Prompts</h1>\
+<div style = 'text-align: left;font-size: 20px;line-height: 1.6;margin-bottom: 16px;'> 1. Enter your filename and save your prompt </div> \
+<div style='text-align: left;font-size: 20px;line-height: 1.6;margin-bottom: 20px;'>2. Check your saved prompt in 'Saved Prompt' tab </div> \
+</div>\
+"
+
+css = "#prompt_block {max-width: 250px !important}"
+
+
+'''
+<div align='center'> <h1 style='font-size:50px;'> Inference-Based Defect Detection </h1>\
+<h2>By implemeting a defect detection AI model on the production line, we aim to streamline operations and improve quality control. Our goals include reducing missing and false reports , cutting down on human resources, and simplifying the overall working process.</h2> \
+<h3>UI allows user to upload images, labeled or unlabeled image, perform defect detection and report performance given the ground truth. </h3> \
+</div> \
+'''
 
 project_info_list = []
 
@@ -302,30 +334,10 @@ max_imagebox = 10
 
 saved_prompts = []
 
-title = "SegGPT: Segmenting Everything In Context<br> \
-<div align='center'> \
-<h2><a href='https://arxiv.org/abs/2304.03284' target='_blank' rel='noopener'>[paper]</a> \
-<a href='https://github.com/baaivision/Painter' target='_blank' rel='noopener'>[code]</a></h2> \
-<br> \
-<image src='file/rainbow.gif' width='720px' /> \
-<h2>SegGPT performs arbitrary segmentation tasks in images or videos via in-context inference, such as object instance, stuff, part, contour, and text, with only one single model.</h2> \
-</div> \
-"
-
-#gradio 
-css = """
-#warning {background-color: #FFCCCB} 
-.login textarea {position: relative/absolute; top: #px; right: #px;}
-
-
-
-input {
-  width: 100%;
-}
-"""
-
 with gr.Blocks() as demo:
     #css=".gradio-container {background-color: #D3D3D3}"
+
+    '''
     user_name = gr.State('None')
     project_options = gr.State([])
     project_info_list = gr.State([])
@@ -336,7 +348,7 @@ with gr.Blocks() as demo:
         with gr.Column():
             gr.Text(visible=False)
         with gr.Column():
-            user_name_display = gr.Text(label="user_name",elem_classes="login")
+            user_name_display = gr.Text(label="user_name")
             project_dropdown = gr.Dropdown(project_options.value, label='Project Names', interactive=True)
     
     demo.load(
@@ -351,69 +363,61 @@ with gr.Blocks() as demo:
     )
     print(user_name)
     print(project_info_list)
+    '''
     gr.Markdown(
         demo_title
     )
+    gr.Markdown("<br>\
+                <br>\
+                ")
     with gr.Tab("Prompting and Predicting"):
         with gr.Row():
             with gr.Column():
                 gr.Markdown(
-                    """ # Upload and Predict """
+                    upload_prompt_title
                 )
-                gr.Markdown(
-                    '''
-                    ## Slide to Adjust the Amount of Prompts you want to Upload
-                    ## Upload your Prompts
-                    '''
-                )
+                
         with gr.Row():
-            with gr.Column():
-                slider = gr.Slider(1,max_imagebox, step = 1, value = 10, label = "Amount of Prompts: ")
-                prompt_button = gr.Button(value = "Submit Amount of Prompt")                
+            slider = gr.Slider(1,max_imagebox, step = 1, value = 10, label = "Amount of Prompts: ",scale=5)
+            prompt_button = gr.Button(value = "Enter",scale = 1)                
         with gr.Row():    
             imagebox = []
             for i in range(max_imagebox):
-                masked_image = gr.ImageMask(brush_radius=8, label = "Prompt", min_width = 350)
-                imagebox.append(masked_image)     
+                
+                masked_image = gr.ImageMask(brush_radius=16, label = "Prompt", min_width = 350, scale = 1)
+                imagebox.append(masked_image)
         with gr.Row():
-            gr.Markdown(
-                '''
-                <br>
-                <br>
-                <br>
-                <h1> Upload the Image to Predict </h1>
-                '''
-            )        
+            gr.Markdown(upload_predict_image_title)        
         with gr.Row():
             with gr.Column():
-                with gr.Row():
-                    predict_img = gr.Image(shape=(240, 240),label = "Image")
-                with gr.Row():
-                    predict_button = gr.Button('Predict')
-                    #clear_prompt_button = gr.ClearButton(imagebox, value = 'Clear All Prompt')
-                    #clear_image_button = gr.ClearButton(predict_img, value = 'Clear Predict Image')
-            with gr.Column():
-                with gr.Row():
-                    prediction_result = gr.Image(label = "Prediction Result")
+                gr.Markdown("# Upload Hdf5 File For Prediction")
+                test_file = gr.File(Label = "Upload Hdf5 File for Prediction")
+                test_evaluation = gr.Button('Evaluate Performance')
+                test_performance = gr.Textbox(label = "Performance(Dice Coefficient)")   
             with gr.Column():
                 with gr.Row():
                     with gr.Column():
+                        gr.Markdown("# Upload Photo for Prediction")
+                        predict_img = gr.Image(shape=(240, 240),label = "Predict Image")
+                    with gr.Column():
+                        predict_button = gr.Button('Predict')
+                        #clear_prompt_button = gr.ClearButton(imagebox, value = 'Clear All Prompt')
+                        #clear_image_button = gr.ClearButton(predict_img, value = 'Clear Predict Image')
+                    
+                        prediction_result = gr.Image(label = "Prediction Result")
+            with gr.Column():
+                with gr.Row():
+                    with gr.Column():
+                        gr.Markdown("# <br>\
+                                    ")
                         answer_mask = gr.Image(label = "Labeled Answer")
                         evaluate_button = gr.Button('Evaluate Performance')
                         performance = gr.Textbox(label = "Performance(Dice Coefficient)")   
         with gr.Row():
-            gr.Markdown(
-                '''
-                <br>
-                <br>
-                <br>
-                <h1> Load or Save Prompts </h1>
-                '''
-            )     
+            gr.Markdown(save_prompt_title)     
         with gr.Row():
-            prompt_name = gr.Textbox(label = "Prompt_name")
-            save_button = gr.Button('Save Prompts')
-            
+            prompt_name = gr.Textbox(label = "Prompt Name",scale = 5)
+            save_button = gr.Button('Save Prompts', scale = 1)
 
         with gr.Row():
             with gr.Column():
@@ -441,6 +445,9 @@ with gr.Blocks() as demo:
 
         with gr.Row():
             with gr.Column():
+                gr.Markdown("<br>\
+                <br>\
+                ")
                 gr.Markdown("## Test Examples")
                 gr.Examples(
                     examples = examples,
@@ -460,6 +467,8 @@ with gr.Blocks() as demo:
                             #title
                             """
                             # THIS PAGE SHOWS ALL THE SAVED VERSION
+                            # Add a chart that shows entire chart
+                            # Add a dropdown
                             """
                         ) 
         with gr.Row():
@@ -475,4 +484,4 @@ with gr.Blocks() as demo:
         
 
 
-demo.launch(enable_queue=True, server_name="0.0.0.0",server_port=6006)
+demo.launch()
